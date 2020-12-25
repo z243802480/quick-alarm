@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>定时任务管理</title>
+    <script src="js/vue.min.js"></script>
+    <script src="js/axios.min.js"></script>
+    <script src="js/index.js"></script>
+    <link rel="stylesheet" href="css/index.css">
+
+    <style>
+        .el-dialog__title {
+            line-height: 24px;
+            font-size: 20px;
+            color: #303133;
+            margin-left: 50px;
+            font-weight: bold;
+        }
+
+        .el-form-item__error {
+            left: 105px;
+        }
+
+        .el-header, .el-footer {
+            background-color: #B3C0D1;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 60px;
+        }
+
+        .el-form-item__label {
+            width: 100px;
+        }
+
+        .el-col {
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .el-form-item .el-form-item {
+            margin-top: 8px;
+            margin-bottom: 10px;
+        }
+
+        .el-card{
+            width: 470px;
+        }
+
+        .el-main .el-input {
+            width: 450px;
+        }
+
+        .el-main .el-input-number {
+            width: 450px !important;
+        }
+
+        .threshold .el-input {
+            width: 320px;
+        }
+
+        .threshold .el-input-number {
+            width: 320px !important;
+        }
+
+        .el-dialog {
+            position: relative;
+            margin: 0 auto 50px;
+            border-radius: 2px;
+            -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+            box-sizing: border-box;
+            width: 600px;
+        }
+    </style>
+
+</head>
+<body style="height: 100vh;margin: 0px">
+<div id="httpConfig" style="height: 100%">
+    <el-container style="border: 1px solid #eee;height: 100%">
+        <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+            <el-menu v-for="(key, name, index) in dynamicValidateForm">
+                <a v-bind:href="'#anchor-'+index" style="text-decoration:none"><el-menu-item>{{ name }}</el-menu-item></a>
+            </el-menu>
+        </el-aside>
+        <el-container>
+            <el-header>
+                PH告警配置
+            </el-header>
+            <el-main ref="configView">
+                <el-form :model="dynamicValidateForm" ref="dynamicValidateForm">
+                    <div v-for="(key, name, index) in dynamicValidateForm" :key="index">
+                        <el-form-item label="配置名称" :id="'anchor-'+index">
+                            {{ name }}
+                        </el-form-item>
+                        <el-form-item label="告警类型" :rules="[{ required: true }]">
+                            <el-select v-model="key.level" placeholder="请选择">
+                                <el-option label="日志" value="LOG"></el-option>
+                                <el-option label="email" value="EMAIL"></el-option>
+                                <el-option label="钉钉" value="DINGDING"></el-option>
+                                <el-option label="飞书" value="FEISHU"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="自动升级" :rules="[{ required: true }]">
+                            <el-switch v-model="key.autoIncEmergency" active-text="开"
+                                       inactive-text="关"></el-switch>
+                        </el-form-item>
+                        <el-form-item label="起始值" :rules="[{ required: true }]">
+                            <el-input-number v-model="key.min" controls-position="right" placeholder="告警消息条数超过此值开始告警" :min="0" :max="30"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="上限值" :rules="[{ required: true }]">
+                            <el-input-number v-model="key.max" controls-position="right" placeholder="告警消息条数超过此值不再告警" :min="0" :max="9999"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="区间设置">
+                            <div style="display: flow-root" class="threshold">
+                                <el-button type="primary" size="mini" icon="el-icon-edit"
+                                           @click="addThreshold(key.threshold)"
+                                           circle></el-button>
+                                <el-row :gutter="20">
+                                    <el-col :span="24"
+                                            v-for="(thresholdItem, index) in key.threshold" :key="index"
+                                            style="min-width: 470px">
+                                        <el-card :body-style="{ padding: '5px',margin : '5px' }">
+                                            <el-form style="width: 100%;margin-top: 18px">
+                                                <el-form-item label="告警类型" :rules="[{ required: true }]">
+                                                    <el-select v-model="thresholdItem.level" placeholder="请选择">
+                                                        <el-option label="日志" value="LOG"></el-option>
+                                                        <el-option label="email" value="EMAIL"></el-option>
+                                                        <el-option label="钉钉" value="DINGDING"></el-option>
+                                                        <el-option label="飞书" value="FEISHU"></el-option>
+                                                    </el-select>
+                                                </el-form-item>
+                                                <el-form-item label="触发值" :rules="[{ required: true }]">
+                                                    <el-input-number v-model="thresholdItem.threshold" controls-position="right" ></el-input-number>
+                                                </el-form-item>
+                                                <el-form-item label="区间上限">
+                                                    <el-input-number v-model="thresholdItem.max" controls-position="right"></el-input-number>
+                                                </el-form-item>
+
+                                                <el-form-item label="预设接收人">
+                                                    <div style="display: table-caption">
+                                                        <el-button type="primary" size="mini" icon="el-icon-plus"
+                                                                   @click="addUsers(thresholdItem.users)"
+                                                                   circle></el-button>
+                                                        <el-input v-for="(user, index) in thresholdItem.users"
+                                                                  v-model="thresholdItem.users[index]" :key="index"
+                                                                  style="padding: 5px;margin-bottom: 10px">
+                                                            <template slot="prepend">{{ index }}</template>
+                                                            <el-button slot="append" icon="el-icon-delete"
+                                                                       @click.prevent="remove(thresholdItem.users, user)"></el-button>
+                                                        </el-input>
+                                                    </div>
+                                                </el-form-item>
+                                                <el-divider></el-divider>
+
+                                                <el-form-item style="text-align: center">
+                                                    <el-button type="primary" size="mini" icon="el-icon-delete"
+                                                               @click="remove(key.threshold, thresholdItem)"
+                                                               circle></el-button>
+                                                </el-form-item>
+                                            </el-form>
+                                        </el-card>
+                                    </el-col>
+                                </el-row>
+                            </div>
+                        </el-form-item>
+                        <el-form-item label="预设接收人" :rules="[{ required: true }]">
+                            <div style="display: table-caption">
+                                <el-button type="primary" size="mini" icon="el-icon-plus" @click="addUsers(key.users)"
+                                           circle></el-button>
+                                <el-input v-for="(user, index) in key.users" v-model="key.users[index]" :key="index"
+                                          style="padding: 5px;margin-bottom: 10px">
+                                    <template slot="prepend">{{ index }}</template>
+                                    <el-button slot="append" icon="el-icon-delete"
+                                               @click.prevent="remove(key.users, user)"></el-button>
+                                </el-input>
+                            </div>
+                        </el-form-item>
+                        <div v-if="name != 'default'">
+                            <el-button @click.prevent="removeAttr(dynamicValidateForm, name)">删除</el-button>
+                        </div>
+                        <el-divider></el-divider>
+                    </div>
+                </el-form>
+            </el-main>
+            <el-footer>
+                <el-button  @click="cancelForm">清空</el-button>
+                <el-button type="primary" @click="resetForm" plain>放弃修改</el-button>
+                <el-button type="primary" @click="submit" plain>新增配置项</el-button>
+                <el-button type="primary" @click="onSubmit">提 交</el-button>
+            </el-footer>
+        </el-container>
+    </el-container>
+</div>
+
+<script>
+    var vue = new Vue({
+        el: "#httpConfig",
+        data: {
+            dynamicValidateForm: {},
+        },
+
+        methods: {
+            onSubmit: function () {
+                if (!validateForm(this.dynamicValidateForm)){
+                    return false;
+                }
+
+                axios({
+                    url: '/alarm/api/config',
+                    method: 'post',
+                    data: this.dynamicValidateForm
+                }).then((res) => {
+                    if (res.data.code == 200) {
+                        this.$message({
+                            type: 'success',
+                            message: res.data.msg
+                        });
+                    } else {
+                        this.$message({
+                            type: 'warning',
+                            message: res.data.msg
+                        })
+                    }
+                }).catch((error) => {
+                    console.log(error);
+                });
+            },
+
+            loadConfig : function () {
+                axios({
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    url: '/alarm/api/config/get',
+                    method: 'get',
+                    data : {}
+                }).then((res) => {
+                    if (res.data.code == 200) {
+                        this.dynamicValidateForm = res.data.data;
+                    } else {
+                        this.$message({
+                            type: 'error',
+                            message: res.data.msg
+                        })
+                        vue.addConfig('default');
+                    }
+                }).catch((error) => {
+                    console.log(error);
+                });
+            },
+
+            addConfig: function (name) {
+                if (name == null || name == "") {
+                    return;
+                }
+
+                this.$set(this.dynamicValidateForm, name, {
+                    level: 'LOG',
+                    autoIncEmergency: false,
+                    max: 30,
+                    min: 0,
+                    threshold: [],
+                    users: []
+                });
+            },
+
+            addThreshold: function (threshold) {
+                threshold.push({
+                    level: 'LOG',
+                    max: '',
+                    threshold: '',
+                    users: []
+                });
+            },
+
+            addUsers: function (thresholdItem) {
+                thresholdItem.push('');
+            },
+
+            removeAttr(selector, attr) {
+                delete selector[attr];
+                this.$forceUpdate()
+            },
+
+            remove(selector, item) {
+                var index = selector.indexOf(item)
+                if (index !== -1) {
+                    selector.splice(index, 1)
+                }
+            },
+
+            resetForm() {
+                this.loadConfig();
+            },
+
+            cancelForm() {
+                this.dynamicValidateForm = {};
+                this.addConfig('default')
+            },
+
+            submit() {
+                this.$prompt('请输入配置名称', '添加配置', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    inputPattern: /^[A-Za-z]+$/,
+                    inputErrorMessage: '配置名称格式不正确'
+                }).then(({value}) => {
+                    this.addConfig(value);
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '取消新增配置'
+                    });
+                });
+            }
+        }
+    });
+
+    function validateForm(form){
+        for(let key in form){
+            if (!validate(key, form[key])){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function validate(key, obj){
+        if (obj.min == undefined){
+            return error(key, "起始值不可为空。");
+        }
+
+        if (obj.max == undefined){
+            return error(key, "上限值不可为空。");
+        }
+
+       if (obj.max < obj.min){
+           return error(key, "上限值不可小于起始值。");
+       }
+
+       if (obj.users.length == 0){
+           return error(key, "至少填写一名默认告警接受人。");
+       }
+
+       if (obj.threshold.length > 0){
+           for(var thr of obj.threshold){
+               if (!validateThreshold(key, thr, obj)){
+                   return false;
+               }
+           }
+       }
+
+       return true;
+    }
+
+    function validateThreshold(key, thr, obj) {
+        if (thr.threshold == undefined){
+            return error(key, "触发值不可为空。");
+        }
+
+        if (thr.max != undefined && thr.max < thr.threshold){
+            return error(key, "区间上限值不可小于触发值。");
+        }
+
+        if (thr.threshold < obj.min || thr.threshold > obj.max){
+            return error(key, "触发值不可超出配置区间。");
+        }
+
+        return true;
+    }
+
+    function error(key, msg){
+        vue.$message({
+            type: 'error',
+            message:"配置: " + key + "，提示：" + msg
+        });
+        return false;
+    }
+
+    vue.loadConfig();
+</script>
+
+</body>
+</html>

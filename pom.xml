@@ -11,8 +11,6 @@
     <modules>
         <module>common</module>
         <module>core</module>
-        <module>plugin</module>
-        <module>example</module>
     </modules>
 
     <properties>
@@ -42,6 +40,11 @@
                 <version>${lombok.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-web</artifactId>
+                <version>4.0.0</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -81,6 +84,10 @@
         <repository>
             <id>yihui-maven-repo</id>
             <url>https://raw.githubusercontent.com/liuyueyi/maven-repository/master/repository</url>
+        </repository>
+        <repository>
+            <id>nexus-aliyun</id>
+            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
         </repository>
     </repositories>
 
