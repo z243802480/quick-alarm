@@ -22,7 +22,7 @@ import java.net.URL;
 public class AlarmApiMainVerticle extends AbstractVerticle {
 
     @Override
-    public void start() throws Exception {
+    public void start() {
         Router router = Router.router(vertx);
 
         router.route(HttpMethod.GET, "/alarm/*")
