@@ -1,0 +1,55 @@
+syntax = "proto3";
+package com.hust.hui.alarm.grpc;
+
+service Alarmservice {
+    rpc sendMsg(AlarmDefaultRequest) returns (AlarmResponse);
+    rpc sendNormalMsg(AlarmNormalRequest) returns (AlarmResponse);
+    rpc sendTemplateMsg(AlarmTemplateRequest) returns (AlarmResponse);
+    rpc sendMsgToUser(AlarmToUserRequest) returns (AlarmResponse);
+    rpc sendNormalMsgToUser(AlarmNormalToUserRequest) returns (AlarmResponse);
+    rpc sendMTemplatesgToUser(AlarmTemplateToUserRequest) returns (AlarmResponse);
+}
+
+message AlarmDefaultRequest {
+    string key = 1;
+    string content = 2;
+}
+
+message AlarmNormalRequest {
+    string key = 3;
+    string title = 4;
+    string content = 5;
+}
+
+message AlarmTemplateRequest {
+    string key = 6;
+    string title = 7;
+    string content = 8;
+    string template = 9;
+}
+
+message AlarmToUserRequest {
+    string key = 10;
+    string content = 11;
+    string alarmUser = 12;
+}
+
+message AlarmNormalToUserRequest {
+    string key = 13;
+    string title = 14;
+    string content = 15;
+    string alarmUser = 16;
+}
+
+message AlarmTemplateToUserRequest {
+    string key = 17;
+    string title = 18;
+    string content = 19;
+    string alarmUser = 20;
+    string template = 21;
+}
+
+message AlarmResponse {
+    string msg = 22;
+    int32 code = 23;
+}

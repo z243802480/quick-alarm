@@ -5,6 +5,7 @@ import com.hust.hui.alarm.api.entity.Result;
 import com.hust.hui.alarm.core.AlarmWrapper;
 import com.hust.hui.alarm.core.loader.ConfLoaderFactory;
 import com.hust.hui.alarm.core.loader.api.IConfLoader;
+import com.hust.hui.alarm.grpc.AlarmserviceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
@@ -12,6 +13,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.StaticHandler;
+import io.vertx.grpc.VertxServer;
+import io.vertx.grpc.VertxServerBuilder;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -22,7 +25,7 @@ import java.net.URL;
 public class AlarmApiMainVerticle extends AbstractVerticle {
 
     @Override
-    public void start() {
+    public void start() throws IOException {
         Router router = Router.router(vertx);
 
         router.route(HttpMethod.GET, "/alarm/*")
@@ -105,6 +108,13 @@ public class AlarmApiMainVerticle extends AbstractVerticle {
                                 "HTTP server started on port " + server.actualPort()
                         )
                 );
+
+        VertxServer rpcServer = VertxServerBuilder
+                .forAddress(vertx, "localhost", 8889)
+                .addService(new AlarmserviceImpl())
+                .build();
+
+        rpcServer.start();
     }
 
     /**
